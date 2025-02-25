@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { ResultType } from "../api/checkin/types";
 
 const CheckInPage = () => {
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<ResultType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,6 +23,7 @@ const CheckInPage = () => {
         setError("체크인에 실패했습니다.");
       }
     } catch (err) {
+      console.log(err);
       setError("서버에 연결할 수 없습니다.");
     } finally {
       setLoading(false);

@@ -54,3 +54,26 @@ export interface SuccessResponse {
     icon: string;
   };
 }
+
+export interface ResultType {
+  platform: string;
+  total: number;
+  result: string;
+  assets: {
+    author: string;
+    game: string;
+    icon: string;
+  };
+  account: {
+    uid: string;
+    nickname: string;
+    rank: number;
+    region: string;
+    cookie: string;
+  };
+  award: {
+    name: string;
+    count: number;
+    icon: string;
+  };
+}
