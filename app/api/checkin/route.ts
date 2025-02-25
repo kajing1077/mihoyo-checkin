@@ -61,10 +61,11 @@ class Game {
 
         // 이미 체크인한 경우에도 보상 정보를 포함
         const totalSigned = data.total;
+        const awardIndex = totalSigned > 0 ? totalSigned - 1 : 0;
         const awardObject = {
-          name: awards[totalSigned]?.name || "보상 없음", // 보상 이름
-          count: awards[totalSigned]?.cnt || 0, // 보상 수량
-          icon: awards[totalSigned]?.icon || "", // 보상 아이콘
+          name: awards[awardIndex]?.name || "보상 없음", // 보상 이름
+          count: awards[awardIndex]?.cnt || 0, // 보상 수량
+          icon: awards[awardIndex]?.icon || "", // 보상 아이콘
         };
 
         if (data.isSigned) {
