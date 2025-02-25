@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "fastcdn.hoyoverse.com",
         port: "",
-        pathname: "/**",
+        pathname: "/static-resource-v2/**",
       },
       {
         protocol: "https",
