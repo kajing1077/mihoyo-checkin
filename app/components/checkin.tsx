@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ResultType } from "../api/checkin/types";
+import { GameName, SuccessResponse } from "../api/checkin/types";
+
+const gameNames: Record<GameName, string> = {
+  genshin: "원신",
+  starrail: "붕괴: 스타레일",
+  zenless: "젠레스 존 제로",
+  honkai: "붕괴3rd", // 필요시 추가
+};
 
 const CheckInPage = () => {
-  const [results, setResults] = useState<ResultType[]>([]);
+  const [results, setResults] = useState<SuccessResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,7 +23,7 @@ const CheckInPage = () => {
     try {
       const response = await fetch("/api/checkin");
       const data = await response.json();
-
+      console.log(data);
       if (data.success) {
         setResults(data.results); // 결과 저장
       } else {
@@ -30,15 +37,8 @@ const CheckInPage = () => {
     }
   };
 
-  function gameName(platform: string) {
-    if (platform === "genshin") {
-      return "원신";
-    } else if (platform === "starrail") {
-      return "붕괴: 스타레일";
-    } else if (platform === "zenless") {
-      return "젠레스 존 제로";
-    }
-    return platform;
+  function gameName(platform: GameName) {
+    return gameNames[platform] || platform;
   }
 
   return (

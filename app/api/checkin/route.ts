@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
-import { AccountData, GameConfig, GameName, SuccessResponse } from "./types";
+import {
+  AccountData,
+  ConfigType,
+  GameConfigWithData,
+  GameName,
+  SuccessResponse,
+} from "./types";
 import { config, DEFAULT_CONSTANTS } from "./constants";
 
 class Game {
   name: GameName; // Use the GameName type
   fullName: string;
-  config: GameConfig; // Use the GameConfig type
+  config: GameConfigWithData;
   data: string[];
 
-  constructor(name: GameName, config: any) {
+  constructor(name: GameName, config: ConfigType[GameName]) {
     this.name = name;
     this.fullName = DEFAULT_CONSTANTS[name].game;
     this.config = { ...DEFAULT_CONSTANTS[name], ...config };

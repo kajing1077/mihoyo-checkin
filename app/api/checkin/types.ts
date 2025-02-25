@@ -1,10 +1,18 @@
 export type GameName = "genshin" | "honkai" | "starrail" | "zenless";
 
+// export type ConfigType = {
+//   [key in GameName]: {
+//     data: string[];
+//   };
+// };
+
 export type ConfigType = {
-  [key in GameName]: {
-    data: string[];
-  };
+  [key in GameName]: GameConfigWithData;
 };
+
+export interface GameConfigWithData extends GameConfig {
+  data: string[];
+}
 
 export interface AccountData {
   game_role_id: string;
@@ -34,29 +42,6 @@ export interface GameConfig {
 
 export interface SuccessResponse {
   platform: GameName;
-  total: number;
-  result: string;
-  assets: {
-    author: string;
-    game: string;
-    icon: string;
-  };
-  account: {
-    uid: string;
-    nickname: string;
-    rank: number;
-    region: string;
-    cookie: string;
-  };
-  award: {
-    name: string;
-    count: number;
-    icon: string;
-  };
-}
-
-export interface ResultType {
-  platform: string;
   total: number;
   result: string;
   assets: {
