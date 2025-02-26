@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HoYoLab Check-In Automation
+
+This project automates the daily check-in process for HoYoLab accounts.
 
 ## Getting Started
 
-First, run the development server:
+### 1. Log in to Your HoYoLab Account
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+1. Visit the [HoYoLab website](https://www.hoyolab.com) and log in with your account.
+
+### 2. Extract Cookies
+
+1. Open the Developer Tools in your browser (usually `F12` or `Ctrl+Shift+I`).
+2. Select the "Network" tab.
+3. Refresh the page (`F5` or `Ctrl+R`).
+4. In the "Filter" box, type `home` to find the `home` request.
+5. Click on the `home` request, and under the "Headers" tab, copy the "Cookie" value.
+
+### 3. Set Up the `.env` File
+
+1. Create a `.env` file in the root directory of the project.
+2. Set the cookie values as environment variables like this:
+
+```env
+GENSHIN_COOKIE="your_copied_cookie_value"
+STARRAIL_COOKIE="your_copied_cookie_value"
+ZZZ_COOKIE="your_copied_cookie_value"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Run the Script
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Navigate to the project directory in your terminal.
+2. Run the following command to execute the script:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run start
+```
 
-## Learn More
+## 주의사항
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 쿠키 값은 개인 정보이므로 공유하지 마세요.
+- 쿠키 값은 주기적으로 갱신될 수 있으므로, 체크인이 실패할 경우 다시 추출하여 `.env` 파일을 업데이트하세요.
