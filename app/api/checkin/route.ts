@@ -4,6 +4,7 @@ import {
   ConfigType,
   GameConfigWithData,
   GameName,
+  Result,
   SuccessResponse,
 } from "./types";
 import { config, DEFAULT_CONSTANTS } from "./constants";
@@ -26,11 +27,15 @@ class Game {
     }
   }
 
-  async checkAndExecute() {
+  async checkAndExecute(): Promise<
+    Result<SuccessResponse[], { message: string; code?: number }>
+  > {
     const accounts = this.data;
     if (accounts.length === 0) {
-      console.warn(`No active accounts found for ${this.fullName}`);
-      return [];
+      console.warn(
+        `No active accounts found for ${this.fullName}. Skipping...`
+      );
+      return { type: "success", value: [] }; // 빈 배열 반환
     }
 
     const success: SuccessResponse[] = [];
@@ -38,26 +43,38 @@ class Game {
       try {
         const match = cookie.match(/ltuid_v2=([^;]+)/);
         if (!match) {
-          console.warn(`No ltuid found in cookie: ${cookie}`);
-          continue; // Skip to the next cookie if ltuid is not found
+          return {
+            type: "error",
+            error: { message: `No ltuid found in cookie: ${cookie}` },
+          };
         }
+
         const ltuid = match[1]; // Safe to access match[1] now
 
-        const accountDetails = await this.getAccountDetails(cookie, ltuid);
-        if (!accountDetails) {
-          continue;
+        const accountDetailsResult = await this.getAccountDetails(
+          cookie,
+          ltuid
+        );
+        if (accountDetailsResult.type === "error") {
+          return accountDetailsResult; // 오류 반환
         }
+        const accountDetails = accountDetailsResult.value; // 성공 시 값 추출
 
         const info = await this.getSignInfo(cookie);
         if (!info.success || !info.data) {
-          continue;
+          return {
+            type: "error",
+            error: { message: `Failed to get sign info` },
+          };
         }
 
         const awardsData = await this.getAwardsData(cookie);
         if (!awardsData.success) {
-          continue;
+          return {
+            type: "error",
+            error: { message: `Failed to get awards data` },
+          };
         }
-
         const awards = awardsData.data;
         const data = {
           total: info.data.total,
@@ -79,7 +96,7 @@ class Game {
           success.push({
             platform: this.name,
             total: data.total,
-            result: this.config.signedMessage, // 이미 체크인한 경우의 메시지
+            result: this.config.signedMessage,
             assets: { ...this.config.assets },
             account: {
               uid: accountDetails.uid,
@@ -88,14 +105,14 @@ class Game {
               region: accountDetails.region,
               cookie,
             },
-            award: awardObject, // 보상 정보 포함
+            award: awardObject,
           });
-          continue; // 다음 쿠키로 넘어감
+          continue;
         }
 
         const sign = await this.sign(cookie);
         if (!sign.success) {
-          continue;
+          return { type: "error", error: { message: `Failed to sign in` } };
         }
 
         console.info(
@@ -118,15 +135,25 @@ class Game {
           award: awardObject,
         });
       } catch (e) {
-        console.error(`${this.fullName}:CheckIn`, e);
+        return {
+          type: "error",
+          error: { message: `Unexpected error: ${e.message}` },
+        };
       }
     }
 
-    return success;
+    return { type: "success", value: success };
   }
 
-  async getAccountDetails(cookieData: string, ltuid: string) {
-    // Todo
+  async getAccountDetails(
+    cookieData: string,
+    ltuid: string
+  ): Promise<
+    Result<
+      { uid: string; nickname: string; rank: number; region: string },
+      { message: string; code?: number }
+    >
+  > {
     try {
       const options = {
         method: "GET",
@@ -141,30 +168,42 @@ class Game {
       const data = await response.json();
 
       if (response.status !== 200 || data.retcode !== 0) {
-        throw new Error(
-          `Failed to login to ${this.fullName} account: ${JSON.stringify(data)}`
-        );
+        return {
+          type: "error",
+          error: {
+            message: `Failed to login to ${
+              this.fullName
+            } account: ${JSON.stringify(data)}`,
+          },
+        };
       }
 
       const accountData: AccountData | undefined = data.data.list.find(
         (account: AccountData) => account.game_id === this.config.gameId
       );
       if (!accountData) {
-        throw new Error(
-          `No ${this.fullName} account found for ltuid: ${ltuid}`
-        );
+        return {
+          type: "error",
+          error: {
+            message: `No ${this.fullName} account found for ltuid: ${ltuid}`,
+          },
+        };
       }
-
       console.log(`Account Region for ${this.fullName}: ${accountData.region}`);
       return {
-        uid: accountData.game_role_id,
-        nickname: accountData.nickname,
-        rank: accountData.level,
-        region: this.fixRegion(accountData.region),
+        type: "success",
+        value: {
+          uid: accountData.game_role_id,
+          nickname: accountData.nickname,
+          rank: accountData.level,
+          region: this.fixRegion(accountData.region),
+        },
       };
     } catch (e) {
-      console.error(`${this.fullName}:login`, `Error: ${e.message}`);
-      throw e; // Re-throw to be handled by the caller
+      return {
+        type: "error",
+        error: { message: `Error in getAccountDetails: ${e.message}` },
+      };
     }
   }
 
@@ -319,7 +358,10 @@ export async function GET() {
   for (const gameName of Object.keys(config) as GameName[]) {
     const game = new Game(gameName, config[gameName]);
     const gameResults = await game.checkAndExecute();
-    results.push(...gameResults);
+    if (gameResults.type === "error") {
+      return NextResponse.json(gameResults.error, { status: 500 });
+    }
+    results.push(...gameResults.value);
   }
   return NextResponse.json({ success: true, results });
 }

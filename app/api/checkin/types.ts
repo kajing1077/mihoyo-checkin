@@ -1,10 +1,8 @@
 export type GameName = "genshin" | "honkai" | "starrail" | "zenless";
 
-// export type ConfigType = {
-//   [key in GameName]: {
-//     data: string[];
-//   };
-// };
+export type Result<T, E> =
+  | { type: "success"; value: T }
+  | { type: "error"; error: E };
 
 export type ConfigType = {
   [key in GameName]: GameConfigWithData;
