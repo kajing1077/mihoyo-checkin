@@ -38,7 +38,7 @@ export const DEFAULT_CONSTANTS: Record<GameName, GameConfig> = {
   },
   starrail: {
     ACT_ID: "e202303301540311",
-    successMessage: "You have successfully checked in today, Trailblazer~",
+    successMessage: "오늘 보상을 잘 받았어! 개척자!",
     signedMessage: "이미 보상을 받았어! 개척자!",
     game: "Honkai: Star Rail",
     gameId: 6,
@@ -55,8 +55,7 @@ export const DEFAULT_CONSTANTS: Record<GameName, GameConfig> = {
   },
   zenless: {
     ACT_ID: "e202406031448091",
-    successMessage:
-      "Congratulations Proxy! You have successfully checked in today!~",
+    successMessage: "축하드려요! 로프꾼님, 보상을 받으셨어요!",
     signedMessage: "보상을 이미 받으셨어요! 로프꾼님!",
     game: "Zenless Zone Zero",
     gameId: 8,
@@ -76,17 +75,21 @@ export const DEFAULT_CONSTANTS: Record<GameName, GameConfig> = {
 
 export const config: ConfigType = {
   genshin: {
+    ...DEFAULT_CONSTANTS.genshin,
     data: [process.env.GENSHIN_COOKIE || ""],
   },
   honkai: {
+    ...DEFAULT_CONSTANTS.honkai,
     data: [
       // ... more account cookies
     ],
   },
   starrail: {
+    ...DEFAULT_CONSTANTS.starrail,
     data: [process.env.STARRAIL_COOKIE || ""],
   },
   zenless: {
+    ...DEFAULT_CONSTANTS.zenless,
     data: [process.env.ZZZ_COOKIE || ""],
   },
 };
