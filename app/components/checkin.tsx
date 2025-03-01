@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { GameName, SuccessResponse } from "../api/checkin/types";
+import Link from "next/link";
 
 const gameNames: Record<GameName, string> = {
   genshin: "원신",
@@ -43,24 +44,48 @@ const CheckInPage = () => {
 
   return (
     <div className="p-4">
-      <button
-        className="px-6 py-2 text-white bg-orange-500 rounded-full shadow-lg hover:bg-orange-600 transition duration-300"
-        onClick={handleCheckIn}
-        disabled={loading}
-      >
-        {loading ? "체크인 중..." : "체크인 시작"}
-      </button>
-      {error && <p className="text-red-600 mt-2">{error}</p>}
+      <div className="flex gap-x-4 items-center ">
+        <div className="h-full">
+          <button
+            className="px-6 py-4 text-white bg-orange-500 rounded-full shadow-lg hover:bg-orange-400 transition duration-300" // 높이 설정
+            onClick={handleCheckIn}
+            disabled={loading}
+          >
+            {loading ? "체크인 중..." : "체크인 시작"}
+          </button>
+        </div>
+        <div className="flex items-center justify-center">
+          <Link
+            as={"image"}
+            target="_blank"
+            href="https://www.hoyolab.com/home"
+            prefetch={false}
+            className="px-4 rounded-full border-2 border-transparent hover:border-orange-500 transition-all"
+          >
+            <div className="relative w-[80px] h-[60px]">
+              <Image
+                src="/images/hoyolab.png"
+                alt="hoyolab link"
+                fill
+                priority
+                className="object-contain" // Tailwind로 가로세로 비율 유지
+                sizes="(max-width: 768px) 100vw, 50vw" // sizes prop 추가
+              />
+            </div>
+          </Link>
+        </div>
+        {error && <p className="text-red-600 mt-2">{error}</p>}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        {results.map((result, index) => (
+        {results.map((result) => (
           <div
             className="bg-white border border-gray-100 rounded-lg shadow-md p-4 flex flex-col items-center"
-            key={index}
+            key={`${result.platform}-${result.account.nickname}`}
           >
             <div className="flex items-center mb-2">
               <Image
                 src={result.assets.icon}
-                alt={`${result.assets.game} icon`}
+                alt={`${result.platform} icon`}
                 width={60}
                 height={60}
                 className="mr-4 rounded-full"
@@ -88,16 +113,12 @@ const CheckInPage = () => {
                 <span className=" text-lg text-orange-500 font-bold">
                   {result.award.name}
                 </span>
-                <span>x {result.award.count} 획득</span>
+                <span>x {result.award.cnt} 획득</span>
               </p>
             </div>
           </div>
         ))}
       </div>
-      {/* 헤더에 넣기 */}
-      <a target="_blank" href="https://www.hoyolab.com/home">
-        HoyoLab
-      </a>
     </div>
   );
 };
