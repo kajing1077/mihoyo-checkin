@@ -3,8 +3,7 @@ import { ConfigType, GameConfig, GameName } from "./types";
 export const DEFAULT_CONSTANTS: Record<GameName, GameConfig> = {
   genshin: {
     ACT_ID: "e202102251931481",
-    successMessage:
-      "Congratulations, Traveler! You have successfully checked in today~",
+    successMessage: "오늘 보상을 잘 받았어! 여행자~",
     signedMessage: "이미 보상을 받았어! 여행자~",
     game: "Genshin Impact",
     gameId: 2,
@@ -56,7 +55,7 @@ export const DEFAULT_CONSTANTS: Record<GameName, GameConfig> = {
   zenless: {
     ACT_ID: "e202406031448091",
     successMessage: "축하드려요! 로프꾼님, 보상을 받으셨어요!",
-    signedMessage: "보상을 이미 받으셨어요! 로프꾼님!",
+    signedMessage: " 로프꾼님, 보상을 이미 받으셨어요!",
     game: "Zenless Zone Zero",
     gameId: 8,
     assets: {
@@ -75,21 +74,21 @@ export const DEFAULT_CONSTANTS: Record<GameName, GameConfig> = {
 
 export const config: ConfigType = {
   genshin: {
-    ...DEFAULT_CONSTANTS.genshin,
+    config: DEFAULT_CONSTANTS.genshin,
     data: [process.env.GENSHIN_COOKIE || ""],
   },
   honkai: {
-    ...DEFAULT_CONSTANTS.honkai,
+    config: DEFAULT_CONSTANTS.honkai,
     data: [
       // ... more account cookies
     ],
   },
   starrail: {
-    ...DEFAULT_CONSTANTS.starrail,
+    config: DEFAULT_CONSTANTS.starrail,
     data: [process.env.STARRAIL_COOKIE || ""],
   },
   zenless: {
-    ...DEFAULT_CONSTANTS.zenless,
+    config: DEFAULT_CONSTANTS.zenless,
     data: [process.env.ZZZ_COOKIE || ""],
   },
 };
