@@ -1,25 +1,33 @@
 import { NextResponse } from "next/server";
 import {
   AccountData,
-  ConfigType,
-  GameConfigWithData,
+  Award,
+  GameConfig,
   GameName,
   Result,
+  SignInfoResponse,
   SuccessResponse,
 } from "./types";
 import { config, DEFAULT_CONSTANTS } from "./constants";
 
+function handleError(e: unknown, context: string = "Unknown context"): string {
+  const errorMessage =
+    e instanceof Error ? e.message : "An unknown error occurred";
+  console.error(`${context}: Error: ${errorMessage}`);
+  return errorMessage;
+}
+
 class Game {
-  name: GameName; // Use the GameName type
+  name: GameName;
   fullName: string;
-  config: GameConfigWithData;
+  config: GameConfig;
   data: string[];
 
-  constructor(name: GameName, config: ConfigType[GameName]) {
+  constructor(name: GameName, config: GameConfig, data: string[] = []) {
     this.name = name;
     this.fullName = DEFAULT_CONSTANTS[name].game;
     this.config = { ...DEFAULT_CONSTANTS[name], ...config };
-    this.data = config.data || [];
+    this.data = data;
 
     if (this.data.length === 0) {
       console.warn(`No ${this.fullName} accounts provided. Skipping...`);
@@ -30,8 +38,7 @@ class Game {
   async checkAndExecute(): Promise<
     Result<SuccessResponse[], { message: string; code?: number }>
   > {
-    const accounts = this.data;
-    if (accounts.length === 0) {
+    if (this.data.length === 0) {
       console.warn(
         `No active accounts found for ${this.fullName}. Skipping...`
       );
@@ -39,25 +46,28 @@ class Game {
     }
 
     const success: SuccessResponse[] = [];
-    for (const cookie of accounts) {
+
+    for (const cookie of this.data) {
       try {
         const match = cookie.match(/ltuid_v2=([^;]+)/);
         if (!match) {
           return {
             type: "error",
-            error: { message: `No ltuid found in cookie: ${cookie}` },
+            error: { message: "No ltuid found in cookie" },
           };
         }
 
-        const ltuid = match[1]; // Safe to access match[1] now
+        const ltuid = match[1];
 
         const accountDetailsResult = await this.getAccountDetails(
           cookie,
           ltuid
         );
+
         if (accountDetailsResult.type === "error") {
           return accountDetailsResult; // 오류 반환
         }
+
         const accountDetails = accountDetailsResult.value; // 성공 시 값 추출
 
         const info = await this.getSignInfo(cookie);
@@ -75,7 +85,8 @@ class Game {
             error: { message: `Failed to get awards data` },
           };
         }
-        const awards = awardsData.data;
+
+        const awards: Award[] = awardsData.data;
         const data = {
           total: info.data.total,
           today: info.data.today,
@@ -83,30 +94,36 @@ class Game {
         };
 
         // 이미 체크인한 경우에도 보상 정보를 포함
-        const totalSigned = data.total;
+        const totalSigned: number = data.total;
         const awardIndex = totalSigned > 0 ? totalSigned - 1 : 0;
         const awardObject = {
           name: awards[awardIndex]?.name || "보상 없음", // 보상 이름
-          count: awards[awardIndex]?.cnt || 0, // 보상 수량
+          cnt: awards[awardIndex]?.cnt || 0, // 보상 수량
           icon: awards[awardIndex]?.icon || "", // 보상 아이콘
         };
 
+        const resultMessage = data.isSigned
+          ? this.config.signedMessage
+          : this.config.successMessage;
+        const total = data.isSigned ? data.total : data.total + 1;
+
+        success.push({
+          platform: this.name,
+          total,
+          result: resultMessage,
+          assets: { ...this.config.assets },
+          account: {
+            uid: accountDetails.game_role_id,
+            nickname: accountDetails.nickname,
+            rank: accountDetails.level,
+            region: accountDetails.region,
+            cookie,
+          },
+          award: awardObject,
+        });
+
         if (data.isSigned) {
           console.info(`${this.fullName}:CheckIn`, "Already signed in today");
-          success.push({
-            platform: this.name,
-            total: data.total,
-            result: this.config.signedMessage,
-            assets: { ...this.config.assets },
-            account: {
-              uid: accountDetails.uid,
-              nickname: accountDetails.nickname,
-              rank: accountDetails.rank,
-              region: accountDetails.region,
-              cookie,
-            },
-            award: awardObject,
-          });
           continue;
         }
 
@@ -117,27 +134,14 @@ class Game {
 
         console.info(
           `${this.fullName}:CheckIn`,
-          `Today's Reward: ${awardObject.name} x${awardObject.count}`
+          `Today's Reward: ${awardObject.name} x${awardObject.cnt}`
         );
-
-        success.push({
-          platform: this.name,
-          total: data.total + 1,
-          result: this.config.successMessage,
-          assets: { ...this.config.assets },
-          account: {
-            uid: accountDetails.uid,
-            nickname: accountDetails.nickname,
-            rank: accountDetails.rank,
-            region: accountDetails.region,
-            cookie,
-          },
-          award: awardObject,
-        });
       } catch (e) {
         return {
           type: "error",
-          error: { message: `Unexpected error: ${e.message}` },
+          error: {
+            message: `Unexpected error: ${handleError(e, this.fullName)}`,
+          },
         };
       }
     }
@@ -148,12 +152,7 @@ class Game {
   async getAccountDetails(
     cookieData: string,
     ltuid: string
-  ): Promise<
-    Result<
-      { uid: string; nickname: string; rank: number; region: string },
-      { message: string; code?: number }
-    >
-  > {
+  ): Promise<Result<AccountData, { message: string; code?: number }>> {
     try {
       const options = {
         method: "GET",
@@ -165,8 +164,8 @@ class Game {
 
       const url = `https://bbs-api-os.hoyolab.com/game_record/card/wapi/getGameRecordCard?uid=${ltuid}`;
       const response = await fetch(url, options);
-      const data = await response.json();
 
+      const data = await response.json();
       if (response.status !== 200 || data.retcode !== 0) {
         return {
           type: "error",
@@ -174,6 +173,7 @@ class Game {
             message: `Failed to login to ${
               this.fullName
             } account: ${JSON.stringify(data)}`,
+            code: data.retcode, // API 응답의 retcode 사용
           },
         };
       }
@@ -181,28 +181,38 @@ class Game {
       const accountData: AccountData | undefined = data.data.list.find(
         (account: AccountData) => account.game_id === this.config.gameId
       );
+
       if (!accountData) {
         return {
           type: "error",
           error: {
             message: `No ${this.fullName} account found for ltuid: ${ltuid}`,
+            code: 404, // 적절한 에러 코드 추가
           },
         };
       }
+
       console.log(`Account Region for ${this.fullName}: ${accountData.region}`);
       return {
         type: "success",
         value: {
-          uid: accountData.game_role_id,
+          game_role_id: accountData.game_role_id,
           nickname: accountData.nickname,
-          rank: accountData.level,
+          level: accountData.level,
           region: this.fixRegion(accountData.region),
+          game_id: accountData.game_id,
         },
       };
     } catch (e) {
       return {
         type: "error",
-        error: { message: `Error in getAccountDetails: ${e.message}` },
+        error: {
+          message: `Error in getAccountDetails: ${handleError(
+            e,
+            this.fullName
+          )}`,
+          code: 500,
+        },
       };
     }
   }
@@ -233,7 +243,7 @@ class Game {
 
       return { success: true };
     } catch (e) {
-      console.error(`${this.fullName}:sign`, `Error: ${e.message}`);
+      handleError(e, `${this.fullName}: sign`);
       return { success: false };
     }
   }
@@ -251,7 +261,7 @@ class Game {
     }
   }
 
-  async getSignInfo(cookieData: string) {
+  async getSignInfo(cookieData: string): Promise<SignInfoResponse> {
     try {
       const url = `${this.config.url.info}?act_id=${this.config.ACT_ID}`;
       const response = await fetch(url, {
@@ -280,12 +290,14 @@ class Game {
         },
       };
     } catch (e) {
-      console.error(`${this.fullName}:getSignInfo`, `Error: ${e.message}`);
+      handleError(e, `${this.fullName}:getSignInfo`);
       return { success: false };
     }
   }
 
-  async getAwardsData(cookieData: string) {
+  async getAwardsData(
+    cookieData: string
+  ): Promise<{ success: boolean; data: Award[] }> {
     try {
       const url = `${this.config.url.home}?act_id=${this.config.ACT_ID}&lang=ko-kr`;
       const response = await fetch(url, {
@@ -302,7 +314,7 @@ class Game {
           "Failed to get awards data.",
           data
         );
-        return { success: false };
+        return { success: false, data: [] };
       }
 
       if (data.data.awards.length === 0) {
@@ -314,8 +326,8 @@ class Game {
 
       return { success: true, data: data.data.awards };
     } catch (e) {
-      console.error(`${this.fullName}:getAwardsData`, `Error: ${e.message}`);
-      return { success: false };
+      handleError(e, `${this.fullName}:getAwardsData`);
+      return { success: false, data: [] };
     }
   }
 
@@ -356,7 +368,8 @@ class Game {
 export async function GET() {
   const results = [];
   for (const gameName of Object.keys(config) as GameName[]) {
-    const game = new Game(gameName, config[gameName]);
+    const { config: gameConfig, data: gameData } = config[gameName];
+    const game = new Game(gameName, gameConfig, gameData);
     const gameResults = await game.checkAndExecute();
     if (gameResults.type === "error") {
       return NextResponse.json(gameResults.error, { status: 500 });
