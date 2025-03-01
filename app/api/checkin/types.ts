@@ -4,12 +4,16 @@ export type Result<T, E> =
   | { type: "success"; value: T }
   | { type: "error"; error: E };
 
-export type ConfigType = {
-  [key in GameName]: GameConfigWithData;
-};
-
-export interface GameConfigWithData extends GameConfig {
+export interface ConfigEntry {
+  config: GameConfig;
   data: string[];
+}
+export type ConfigType = Record<GameName, ConfigEntry>;
+
+export interface Award {
+  name: string;
+  cnt: number;
+  icon: string;
 }
 
 export interface AccountData {
@@ -54,9 +58,16 @@ export interface SuccessResponse {
     region: string;
     cookie: string;
   };
-  award: {
-    name: string;
-    count: number;
-    icon: string;
-  };
+  award: Award;
+}
+
+export interface SignInfoData {
+  total: number;
+  today: string;
+  isSigned: boolean;
+}
+
+export interface SignInfoResponse {
+  success: boolean;
+  data?: SignInfoData;
 }
