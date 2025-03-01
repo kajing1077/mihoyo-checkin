@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: [
-      "upload-static.hoyoverse.com", // 추가된 호스트
-      "fastcdn.hoyoverse.com",
-      "webstatic.hoyoverse.com",
-      "act-webstatic.hoyoverse.com",
-    ],
+    // domains: [
+    //   "upload-static.hoyoverse.com", // 추가된 호스트
+    //   "fastcdn.hoyoverse.com",
+    //   "webstatic.hoyoverse.com",
+    //   "act-webstatic.hoyoverse.com",
+    // ],
     remotePatterns: [
       {
         protocol: "https",
@@ -32,6 +32,11 @@ const nextConfig: NextConfig = {
         hostname: "upload-static.hoyoverse.com",
         port: "",
         pathname: "/event/**",
+      },
+      {
+        protocol: "https",
+        hostname: "act-webstatic.hoyoverse.com",
+        pathname: "/event-static/**", // 특정 경로 허용
       },
     ],
   },
